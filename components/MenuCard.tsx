@@ -1,14 +1,14 @@
+import { useCartStore } from "@/store/cart.store";
+import { MenuItem } from "@/type";
 import React from "react";
 import { Image, Text, TouchableOpacity } from "react-native";
 
-interface MenuCardProps {
-  image: string;
-  name: string;
-  price: number;
-}
-
-const MenuCard: React.FC<MenuCardProps> = ({ image, name, price }) => {
-  const image_url = `${image}`;
+const MenuCard = ({
+  item: { $id, image_url, name, price },
+}: {
+  item: MenuItem;
+}) => {
+  const { addItem } = useCartStore();
 
   return (
     <TouchableOpacity className="menu-card w-full">
@@ -21,7 +21,11 @@ const MenuCard: React.FC<MenuCardProps> = ({ image, name, price }) => {
         {name}
       </Text>
       <Text className="text-sm font-semibold text-gray-500 mb-4">${price}</Text>
-      <TouchableOpacity>
+      <TouchableOpacity
+        onPress={() =>
+          addItem({ id: $id, name, price, image_url, customizations: [] })
+        }
+      >
         <Text className="text-primary font-bold">Add to cart +</Text>
       </TouchableOpacity>
     </TouchableOpacity>

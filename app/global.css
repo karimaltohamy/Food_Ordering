@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 
+@layer base {
+    body {
+        @apply font-quicksand;
+    }
+}
 
 @layer utilities {
     .flex-center {
@@ -56,7 +61,7 @@
     }
 
     .filter {
-        @apply px-6 py-3 rounded-full mr-2 shadow-sm shadow-black/10;
+        @apply px-6 py-3 rounded-full mr-2 shadow-sm shadow-black/20;
     }
 
     .menu-card {

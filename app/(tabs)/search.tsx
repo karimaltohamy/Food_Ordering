@@ -5,6 +5,7 @@ import SearchInput from "@/components/SearchInput";
 import MenuCardSkeleton from "@/components/shared/MenuCardSkeleton";
 import { getCategories, getMenu } from "@/lib/appwrite";
 import useAppwrite from "@/lib/useAppwrite";
+import { MenuItem } from "@/type";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
@@ -87,13 +88,13 @@ const Search = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1">
+    <SafeAreaView className="flex-1 bg-white">
       <FlatList
         data={menus || []}
         keyExtractor={(item) => item.$id}
         numColumns={2}
         columnWrapperClassName="gap-7"
-        contentContainerClassName="gap-7 px-5 pb-32"
+        contentContainerClassName="gap-7 px-5 pb-32 mt-5"
         refreshControl={
           <RefreshControl
             refreshing={refreshing}
@@ -119,7 +120,7 @@ const Search = () => {
           </View>
         )}
         ListHeaderComponent={() => (
-          <View className="my-5 gap-5">
+          <View className="gap-5">
             <View className="flex-between flex-row">
               <View>
                 <Text className="text-primary text-[11px]">DELIVER TO</Text>
@@ -153,11 +154,7 @@ const Search = () => {
                 isEven ? "mt-0" : "mt-10"
               } relative flex-1 max-w-[48%]`}
             >
-              <MenuCard
-                image={item.image_url}
-                name={item.name}
-                price={item.price}
-              />
+              <MenuCard item={item as unknown as MenuItem} />
             </View>
           );
         }}

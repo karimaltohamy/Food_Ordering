@@ -40,7 +40,9 @@ const BaseButton: React.FC<Props> = ({
 
   return (
     <Pressable
-      className={`${getButtonStyle()} ${disabled ? "opacity-50" : ""}`}
+      className={`base-bold ${getButtonStyle()} ${
+        disabled ? "opacity-50" : ""
+      }`}
       onPress={onPress}
       disabled={isLoading || disabled}
     >

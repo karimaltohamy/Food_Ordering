@@ -16,7 +16,7 @@ export default function Index() {
   return (
     <SafeAreaView className="flex-1 bg-white">
       <FlatList
-        contentContainerClassName="px-4 pt-4"
+        contentContainerClassName="px-5 my-5 pb-32"
         data={offers}
         renderItem={({ item, index }) => {
           const isEven = index % 2 === 0;
@@ -62,7 +62,7 @@ export default function Index() {
           );
         }}
         ListHeaderComponent={() => (
-          <View className="flex-between flex-row my-5">
+          <View className="flex-between flex-row">
             <View>
               <Text className="text-primary text-[11px]">DELIVER TO</Text>
               <TouchableOpacity className="flex-row items-center gap-1">
