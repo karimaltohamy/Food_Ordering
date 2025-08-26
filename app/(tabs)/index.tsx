@@ -66,9 +66,7 @@ export default function Index() {
             <View>
               <Text className="text-primary text-[11px]">DELIVER TO</Text>
               <TouchableOpacity className="flex-row items-center gap-1">
-                <Text className="paragragh-bold text-dark-100 mt-0.5">
-                  Croatia
-                </Text>
+                <Text className="font-bold text-dark-100 mt-0.5">Croatia</Text>
                 <Image
                   source={images.arrowDown}
                   className="size-3"
