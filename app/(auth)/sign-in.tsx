@@ -1,8 +1,8 @@
 import BaseButton from "@/components/shared/form/BaseButton";
 import BaseInput from "@/components/shared/form/BaseInput";
 import { signIn } from "@/lib/appwrite";
-import useAuthStore from "@/store/auth.store";
 import { SignInSchema } from "@/utils/validation/auth";
+import useAuthStore from "@/store/auth.store";
 import { useMutation } from "@tanstack/react-query";
 import { Link, router } from "expo-router";
 import { useFormik } from "formik";
@@ -11,12 +11,13 @@ import { Alert, Text, View } from "react-native";
 
 const SignIn = () => {
   const { fetchUser } = useAuthStore();
-
+  
   const { mutate, isPending } = useMutation({
     mutationFn: signIn,
     onSuccess: async () => {
       Alert.alert("Success", "User signed in successfully");
-      router.replace("/");
+      await fetchUser();
+      router.push("/");
       console.log("User signed in successfully");
     },
     onError: (error) => {

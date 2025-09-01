@@ -1,34 +1,97 @@
 import CartCard from "@/components/CartCard";
+import PaymentInfo from "@/components/PaymentInfo";
 import CustomHeader from "@/components/shared/CustomHeader";
 import BaseButton from "@/components/shared/form/BaseButton";
+import { createOrder, createPaymentIntent } from "@/lib/appwrite";
 import { useCartStore } from "@/store/cart.store";
-import cn from "clsx";
-import React from "react";
-import { FlatList, SafeAreaView, Text, View } from "react-native";
-
-const ItemSummary = ({
-  title,
-  value,
-  titleStyle,
-  valueStyle,
-}: {
-  title: string;
-  value: string;
-  titleStyle?: string;
-  valueStyle?: string;
-}) => {
-  return (
-    <View className="flex-between flex-row items-center mb-2 last:mb-0">
-      <Text className={cn("font-semibold text-gray-500", titleStyle)}>
-        {title}
-      </Text>
-      <Text className={cn("font-bold", valueStyle)}>{value}</Text>
-    </View>
-  );
-};
+import { useStripe } from "@stripe/stripe-react-native";
+import React, { useState } from "react";
+import { Alert, FlatList, SafeAreaView, Text, View } from "react-native";
 
 const Cart = () => {
-  const { items } = useCartStore();
+  const { items, clearCart } = useCartStore();
+  const { confirmPayment } = useStripe();
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
+
+  const calculateTotal = () => {
+    const subtotal = items.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0
+    );
+    const deliveryFee = 5.0;
+    const discount = 0.5;
+    return subtotal + deliveryFee - discount;
+  };
+
+  async function handlePayment() {
+    if (items.length === 0) {
+      Alert.alert(
+        "Empty Cart",
+        "Please add items to your cart before ordering."
+      );
+      return;
+    }
+
+    setIsProcessingPayment(true);
+
+    try {
+      const totalAmount = Math.round(calculateTotal() * 100); // Convert to cents
+      const clientSecret = await createPaymentIntent(totalAmount, "usd");
+
+      console.log("Client Secret:", clientSecret);
+
+      const { error, paymentIntent } = await confirmPayment(clientSecret, {
+        paymentMethodType: "Card",
+        paymentMethodData: {},
+      });
+
+      console.log("PaymentIntent:", paymentIntent);
+      console.log("Error:", error);
+
+      if (error) {
+        Alert.alert(
+          "Payment Failed",
+          error.localizedMessage || "Something went wrong with the payment"
+        );
+      } else if (paymentIntent && paymentIntent.status === "Succeeded") {
+        // Create order in Appwrite database
+        const orderData = {
+          items: items.map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image_url,
+          })),
+          total: calculateTotal(),
+          paymentIntentId: paymentIntent.id,
+          status: "confirmed",
+          createdAt: new Date().toISOString(),
+        };
+
+        await createOrder(orderData);
+
+        Alert.alert(
+          "Order Successful!",
+          "Your order has been placed successfully. You will receive a confirmation shortly.",
+          [
+            {
+              text: "OK",
+              onPress: () => clearCart(),
+            },
+          ]
+        );
+      }
+    } catch (err) {
+      console.error("Payment error:", err);
+      Alert.alert(
+        "Error",
+        "Something went wrong while processing your payment. Please try again."
+      );
+    } finally {
+      setIsProcessingPayment(false);
+    }
+  }
 
   return (
     <SafeAreaView className="flex-1 bg-white">
@@ -51,15 +114,15 @@ const Cart = () => {
               <View className="p-4 rounded-xl border border-slate-400 gap-1.5">
                 <Text className="base-bold text-lg mb-3">Payment Summary</Text>
 
-                <ItemSummary
+                <PaymentInfo
                   title={`Total Items (${items.length})`}
                   value={`$${items.reduce(
                     (total, item) => total + item.price * item.quantity,
                     0
                   )}`}
                 />
-                <ItemSummary title={`Delivery Fee`} value={`$5.00`} />
-                <ItemSummary
+                <PaymentInfo title={`Delivery Fee`} value={`$5.00`} />
+                <PaymentInfo
                   title={`Discount`}
                   value={`- $0.50`}
                   valueStyle="text-green-500"
@@ -67,25 +130,18 @@ const Cart = () => {
 
                 <View className="border-t border-slate-400 my-4"></View>
 
-                <ItemSummary
+                <PaymentInfo
                   title="Total"
                   titleStyle="font-bold text-lg text-black"
-                  value={`$${
-                    items.reduce(
-                      (total, item) => total + item.price * item.quantity,
-                      0
-                    ) +
-                    5.0 -
-                    0.5
-                  }`}
+                  value={`$${calculateTotal().toFixed(2)}`}
                   valueStyle="text-xl"
                 />
               </View>
 
               <BaseButton
                 label="Order Now"
-                isLoading={false}
-                onPress={() => {}}
+                isLoading={isProcessingPayment}
+                onPress={handlePayment}
               />
             </View>
           )

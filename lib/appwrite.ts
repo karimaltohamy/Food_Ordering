@@ -3,6 +3,7 @@ import {
   Avatars,
   Client,
   Databases,
+  Functions,
   ID,
   Query,
   Storage,
@@ -30,6 +31,7 @@ export const appwriteConfig = {
   menuCollectionId: "68a6325b0033274103f8",
   customizationsCollectionId: "68a6347b0023f9c71341",
   menuCustomizationsCollectionId: "68a635d80006c2516713",
+  orderCollectionId: "orders",
 };
 
 export const client = new Client();
@@ -43,6 +45,7 @@ export const account = new Account(client);
 export const databases = new Databases(client);
 export const storage = new Storage(client);
 const avatars = new Avatars(client);
+export const functions = new Functions(client);
 
 export const createUser = async ({
   email,
@@ -73,11 +76,11 @@ export const createUser = async ({
 
 export const signIn = async ({ email, password }: SignInParams) => {
   try {
-    try {
-      await account.deleteSession("current");
-    } catch {
-      // ignore if no session exists
-    }
+    // try {
+    //   await account.deleteSession("current");
+    // } catch {
+    //   // ignore if no session exists
+    // }
     await account.createEmailPasswordSession(email, password);
   } catch (e) {
     console.log("Error signing in:", e);
@@ -102,6 +105,17 @@ export const getCurrentUser = async () => {
   } catch (e) {
     console.log(e);
     throw new Error(e as string);
+  }
+};
+
+export const signOut = async () => {
+  try {
+    await account.deleteSession("current");
+    console.log("User signed out successfully");
+    return true;
+  } catch (e) {
+    console.error("Error signing out:", e);
+    throw new Error("Failed to sign out");
   }
 };
 
@@ -139,6 +153,56 @@ export const getCategories = async () => {
 
     return categories.documents;
   } catch (e) {
+    throw new Error(e as string);
+  }
+};
+
+export async function createPaymentIntent(amount: number, currency: string) {
+  try {
+    const response = await functions.createExecution(
+      "68b19115001d39aa08af",
+      JSON.stringify({ amount, currency })
+    );
+
+    console.log("Function response:", JSON.stringify(response, null, 2));
+
+    if (!response.responseBody) {
+      throw new Error("No response body from payment function");
+    }
+
+    const parsed = JSON.parse(response.responseBody);
+
+    if (!parsed.clientSecret) {
+      throw new Error("No client secret in response");
+    }
+
+    return parsed.clientSecret;
+  } catch (e) {
+    console.error("Payment intent creation failed:", e);
+    throw new Error(
+      "Failed to create payment intent. Please check your Appwrite Function."
+    );
+  }
+}
+
+export const createOrder = async (orderData: any) => {
+  try {
+    const currentUser = await getCurrentUser();
+
+    const orderDocument = await databases.createDocument(
+      appwriteConfig.databaseId,
+      appwriteConfig.orderCollectionId,
+      ID.unique(),
+      {
+        ...orderData,
+        userId: currentUser.$id,
+        items: JSON.stringify(orderData.items),
+      }
+    );
+
+    return orderDocument;
+  } catch (e) {
+    console.error("Error creating order:", e);
     throw new Error(e as string);
   }
 };
